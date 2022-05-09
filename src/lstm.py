@@ -69,10 +69,12 @@ class LSTM(nn.Module):
         """
         :param tokens torch.Tensor: list of tokens of size (n_tokens, batch_size, input_size)
 
-        returns (n_token, batch_size, output_size)
+        returns (n_token, batch_size, input_size)
         """
-        state = torch.zeros(())
-        out = torch.zeros(())
+        _, batch_size, input_size = tokens.shape
+        assert input_size == self.input_size
+        state = torch.zeros((batch_size, self.output_size))
+        out = torch.zeros((batch_size, self.output_size))
 
         outputs = []
 
@@ -81,5 +83,4 @@ class LSTM(nn.Module):
             outputs.append(out)
 
         return torch.stack(outputs, dim=0)
-
 
