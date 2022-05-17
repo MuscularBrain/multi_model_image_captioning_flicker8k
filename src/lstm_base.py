@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from torch.autograd import Variable
+from torch.nn.utils.rnn import pack_padded_sequence
 
 class Encoder(nn.Module):
     def __init__(self, embedding_size):
@@ -53,7 +54,7 @@ class Decoder(nn.Module):
 
 
         
-    def forward(self, x, captions = None):
+    def forward(self, x, captions = None, lengths = None):
         """Decode image feature vectors and generates captions."""
         
         # training 
@@ -62,6 +63,7 @@ class Decoder(nn.Module):
 
             # teacher forcing
             inputs = torch.cat((x.unsqueeze(1), embeddings), 1)
+            inputs = pack_padded_sequence(embeddings, lengths, batch_first=True, enforce_sorted=False) 
             hiddens, _ = self.lstm(inputs)
             outputs = self.linear(hiddens[0])
             return outputs
@@ -85,3 +87,15 @@ class Decoder(nn.Module):
                 
                 
             return torch.Tensor(caption_out)
+
+        
+class BaseLSTM(nn.Module):      
+    def __init__(self, embedding_size, hidden_size, vocab, n_layers = 2):
+        super(BaseLSTM, self).__init__()
+        self.encoder = Encoder(embedding_size)
+        self.decoder = Decoder(embedding_size, hidden_size, vocab, n_layers)
+    
+    
+    def forward(self, images, captions = None, lengths = None):
+        encodings = self.encoder(images)
+        return self.decoder(encodings, captions, lengths)

@@ -29,8 +29,11 @@ class CapsCollate:
         imgs = torch.cat(imgs,dim=0)
         
         targets = [item[1] for item in batch]
+        
+        lengths = [len(cap) for cap in targets]
+        
         targets = pad_sequence(targets, batch_first=self.batch_first, padding_value=self.pad_idx)
-        return imgs,targets
+        return imgs, targets, lengths
     
 if __name__ == "__main__":  
     flickr_dataset =  dataset.FlickrDataset(
