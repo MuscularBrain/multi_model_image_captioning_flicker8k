@@ -30,6 +30,8 @@ class Encoder(nn.Module):
         # reduce to 1d
         features = Variable(conv_out.data)
         features = features.view(features.size(0), -1)
+        #print('Conv out shape')
+        #print(features.size())
         out = self.bn(self.linear(features))
         return out
     
@@ -41,6 +43,8 @@ class Decoder(nn.Module):
     def __init__(self, embedding_size, hidden_size, vocab, n_layers = 2):
         super(Decoder, self).__init__()        
         self.vocab = vocab
+        self.n_layers = n_layers
+        self.hidden_size  = hidden_size
         self.embedding = nn.Embedding(len(self.vocab),embedding_size)
         self.lstm = nn.LSTM(embedding_size, hidden_size, n_layers, batch_first=True)
         self.linear = nn.Linear(hidden_size, len(self.vocab))
@@ -51,21 +55,23 @@ class Decoder(nn.Module):
         #self.linear.weight.data.uniform_(-0.1, 0.1)
         #self.linear.bias.data.fill_(0)
     
-
-
+    
+    
         
-    def forward(self, x, captions = None, lengths = None):
+    def forward(self, x, captions = None):#, lengths = None):
         """Decode image feature vectors and generates captions."""
         
         # training 
         if captions is not None:
+            captions = captions[:,:-1]
             embeddings = self.embedding(captions)
 
             # teacher forcing
             inputs = torch.cat((x.unsqueeze(1), embeddings), 1)
-            inputs = pack_padded_sequence(embeddings, lengths, batch_first=True, enforce_sorted=False) 
+            #inputs = pack_padded_sequence(embeddings, lengths, batch_first=True, enforce_sorted=False) 
+                   
             hiddens, _ = self.lstm(inputs)
-            outputs = self.linear(hiddens[0])
+            outputs = self.linear(hiddens)
             return outputs
         
         # testing/output:
@@ -96,6 +102,6 @@ class BaseLSTM(nn.Module):
         self.decoder = Decoder(embedding_size, hidden_size, vocab, n_layers)
     
     
-    def forward(self, images, captions = None, lengths = None):
+    def forward(self, images, captions = None): #, lengths = None):
         encodings = self.encoder(images)
-        return self.decoder(encodings, captions, lengths)
+        return self.decoder(encodings, captions)#, lengths)
