@@ -95,6 +95,52 @@ class FlickrDataset(Dataset):
 
         return img, torch.tensor(caption_vec)
 
+
+class FlickrDataset_Plaintext(Dataset):
+    """
+    FlickrDataset
+    Returns plaintext tokens (instead of using a vocabulary)
+    """
+
+    df: pd.DataFrame
+
+    def __init__(self,root_dir,captions_file,transform=None,freq_threshold=5):
+        self.root_dir = root_dir
+        self.df = pd.read_csv(captions_file)#type:ignore
+        self.transform = transform
+
+        #Get image and caption colum from the dataframe
+        self.imgs = self.df["image"]
+        self.captions = self.df["caption"]
+
+        #Initialize vocabulary and build vocab
+        # self.vocab = Vocabulary(freq_threshold)
+        # self.vocab.build_vocab(self.captions.tolist())
+
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self,idx):
+        caption = self.captions[idx]
+        img_name = self.imgs[idx]
+        img_location = os.path.join(self.root_dir,img_name)
+        img = Image.open(img_location).convert("RGB")
+
+        #apply the transfromation to the image
+        if self.transform is not None:
+            img = self.transform(img)
+
+        #tokenize the caption text
+        tokens= [*Vocabulary.tokenize(caption) , "<EOS>"] #we don’t need a <SOS> token with LSTM
+        #(the initialization of the LSTM hidden vector suffices)
+
+        # caption_vec += [self.vocab.stoi["<SOS>"]]
+        # caption_vec += self.vocab.numericalize(caption)
+        # caption_vec += [self.vocab.stoi["<EOS>"]]
+
+        return img, tokens
+
     
     
 class CapsCollate:
