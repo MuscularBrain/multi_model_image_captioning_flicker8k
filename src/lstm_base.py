@@ -48,6 +48,9 @@ class Decoder(nn.Module):
         self.embedding = nn.Embedding(len(self.vocab),embedding_size)
         self.lstm = nn.LSTM(embedding_size, hidden_size, n_layers, batch_first=True)
         self.linear = nn.Linear(hidden_size, len(self.vocab))
+        
+        self.word_softmax = nn.Softmax(dim=-1)
+        self.temp = 0.9
 
         
         
@@ -70,8 +73,8 @@ class Decoder(nn.Module):
             inputs = torch.cat((x.unsqueeze(1), embeddings), 1)
             #inputs = pack_padded_sequence(embeddings, lengths, batch_first=True, enforce_sorted=False) 
                    
-            hiddens, _ = self.lstm(inputs)
-            outputs = self.linear(hiddens)
+            outputs, _ = self.lstm(inputs)
+            outputs = self.linear(outputs)
             return outputs
         
         # testing/output:
@@ -85,8 +88,14 @@ class Decoder(nn.Module):
                 outputs = self.linear(hiddens.squeeze(1))          # (batch_size, vocab_size)
                 
                 # sample output
-                pred = outputs.max(1)[1]
+                # stochastic sampling with temperature softmax 
+                out_soft = self.word_softmax(outputs)/self.temp
+                pred = torch.multinomial(out_soft[0], 1)
+                #pred = outputs.max(1)[1]
+                if pred[0].item() == 0:
+                    break
                 caption_out.append(pred)
+                
                 
                 inputs = self.embedding(pred)
                 inputs = inputs.unsqueeze(1)                       # (batch_size, 1, embedding_size)
