@@ -159,3 +159,33 @@ class CapsCollate:
 
         targets = pad_sequence(targets, batch_first=self.batch_first, padding_value=self.pad_idx)
         return imgs, targets
+
+def pad_embedding(caption: torch.Tensor, pad_token: torch.Tensor, size):
+    caption_length, _ = caption.shape
+    if caption_length > size:
+        return caption[:size, :]
+    return torch.cat([caption, *it.repeat(pad_token, size-caption_length)], axis=0) #type: ignore
+
+class EmbedCollate:
+    """
+    Collate to apply the padding to the captions with dataloader
+    """
+
+    def __init__(self,pad_token, embed, batch_first=False):
+        self.pad_token = pad_token
+        self.batch_first = batch_first
+        self.embed = embed
+    
+    def __call__(self,batch):
+        imgs = [item[0].unsqueeze(0) for item in batch]
+        imgs = torch.cat(imgs,dim=0)
+        
+        captions = [item[1] for item in batch]
+        max_len = max(len(c) for c in captions)
+        padded = torch.stack(
+            [pad_embedding(c, self.pad_token, size=max_len) for c in captions],
+            dim=0
+        )
+
+        # targets = pad_sequence(targets, batch_first=self.batch_first, padding_value=self.pad_idx)
+        return imgs, padded
