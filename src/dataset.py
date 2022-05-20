@@ -173,7 +173,6 @@ class EmbedCollate:
 
     def __init__(self,pad_token, embed):
         self.pad_token = pad_token
-        self.batch_first = batch_first
         self.embed = embed
     
     def __call__(self,batch):
@@ -187,5 +186,4 @@ class EmbedCollate:
             dim=0
         )
 
-        # targets = pad_sequence(targets, batch_first=self.batch_first, padding_value=self.pad_idx)
         return imgs, padded
