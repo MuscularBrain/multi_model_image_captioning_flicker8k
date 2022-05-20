@@ -171,7 +171,7 @@ class EmbedCollate:
     Collate to apply the padding to the captions with dataloader
     """
 
-    def __init__(self,pad_token, embed, batch_first=False):
+    def __init__(self,pad_token, embed):
         self.pad_token = pad_token
         self.batch_first = batch_first
         self.embed = embed
@@ -180,7 +180,7 @@ class EmbedCollate:
         imgs = [item[0].unsqueeze(0) for item in batch]
         imgs = torch.cat(imgs,dim=0)
         
-        captions = [item[1] for item in batch]
+        captions = [self.embed(item[1]) for item in batch]
         max_len = max(len(c) for c in captions)
         padded = torch.stack(
             [pad_embedding(c, self.pad_token, size=max_len) for c in captions],
